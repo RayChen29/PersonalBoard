@@ -6,5 +6,4 @@ Set key to "" if you don't want a secret key.
 
 DIRECTORIES
 sample pictures
-D:/huh/Bilibili - Helm
-D:/huh/goat
+
