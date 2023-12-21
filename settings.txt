@@ -1,0 +1,10 @@
+resolution=1920x1080
+bgcolor=#2C3738
+key=""
+##
+Set key to "" if you don't want a secret key.
+
+DIRECTORIES
+sample pictures
+D:/huh/Bilibili - Helm
+D:/huh/goat
