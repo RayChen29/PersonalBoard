@@ -1,9 +1,7 @@
-resolution=1920x1080
+resolution=79x40
 bgcolor=#2C3738
 key=""
 ##
 Set key to "" if you don't want a secret key.
 
 DIRECTORIES
-sample pictures
-
