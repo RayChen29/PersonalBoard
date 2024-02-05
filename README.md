@@ -1,5 +1,5 @@
-MISTAKE: 
-During the 'refactoring' process, I forgot about ensuring tag support worked. 
+QUICK HEADS UP
+After moving onto Base64 Encoding for file paths, I can't automatically include the sample pictures folder into settings.txt
 The old version is under the V1 branch.
 
 Revision History
