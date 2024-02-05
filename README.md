@@ -1,5 +1,6 @@
 MISTAKE: 
 During the 'refactoring' process, I forgot about ensuring tag support worked. 
+Also, noticed that the 4- page display isn't working properly.
 The old version is under the V1 branch.
 
 Revision History
