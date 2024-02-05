@@ -1,3 +1,17 @@
+MISTAKE: 
+During the 'refactoring' process, I forgot about ensuring tag support worked. 
+The old version is under the V1 branch.
+
+Revision History
+2/5/24 - Refactoring and etc.
+-In settings.txt, file paths run on Base64 to support UTF-8 / foreign folder names 
+-Everything was put into a class and ran as a class object to help avoid globals
+-Photo-viewing now takes your monitor's resolution into account to determine how it will be displayed
+  Before, if the photo's dimensions were too big, you'd only be able to see one corner of it.
+
+12/24/23 - First released.
+
+
 Written in Python, using Tkinter and Pillow.
 This IS a work in progress, hopefully can add more features later.
 For your (images') safety, probably backup your images before trying this out. I am not responsible for any loss incurred otherwise.
