@@ -6,7 +6,6 @@ from tkinter import filedialog
 from PIL import Image, ImageTk, ExifTags
 from PIL.ExifTags import TAGS
 import os
-import glob #not needed?
 import base64
 from win_unicode_console import enable
 enable()
@@ -272,6 +271,7 @@ class PersonalBoard:
                     
                     
     #UPL - Page Buttons Grid Labels
+    #TODO: for 4- pages, support backward page buttons
     def update_page_label(self,page_no,page_count): #page_no = current page
         for widget in self.page_grid.winfo_children(): 
             widget.destroy()
@@ -293,7 +293,7 @@ class PersonalBoard:
                 if target_page >= page_count:
                     jump(page_count - 1)
         if end_page <= 4: #If 5 or less pages
-            for i in range(page_no,end_page):
+            for i in range(end_page):
                 page = Button(self.page_grid,text=str(i+1), command=lambda i=i:jump(i))
                 if i == page_no:
                     page.config(state="disabled")
@@ -337,8 +337,6 @@ class PersonalBoard:
             p5 = Button(self.page_grid, text = page_count, command=lambda i=page_count-1:jump(i))
             if page_no >= (page_count -2):
                 p5.config(text='',state='disabled')
-            # if start_page == (page_count) or (start_page - page_count) <= 2:
-                # disable_page(p5)
             p5.grid(row=0,column=4)
             #TODO: Find way to get focus to  work on jump_entry
             jump_entry = Entry(self.page_grid)
