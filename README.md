@@ -51,5 +51,4 @@ Adding key events to focus on the appropriate entry fields
 Resizing the viewed image from fullsize to a size that is more viewable (Done?)
 Adding a fullscreen option for viewing the image
 Allow adding tags to multiple images at once from the gallery
-
-
+Loading optimization, especially for higher image counts.
