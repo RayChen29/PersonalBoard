@@ -3,6 +3,10 @@ After moving onto Base64 Encoding for file paths, I can't automatically include 
 The old version is under the V1 branch.
 
 Revision History
+
+2/15/24 - Quality of Life Regarding Image Tagging
+-You can now add/remove tags from multiple images on the front page rather than going through each individual image
+
 2/5/24 - Refactoring and etc.
 -In settings.txt, file paths run on Base64 to support UTF-8 / foreign folder names 
 -Everything was put into a class and ran as a class object to help avoid globals
@@ -16,7 +20,7 @@ Written in Python, using Tkinter and Pillow.
 This IS a work in progress, hopefully can add more features later.
 For your (images') safety, probably backup your images before trying this out. I am not responsible for any loss incurred otherwise.
 
-PersonalBoard uses your images' ExifData, specifically the UserComment tag (37510) . If you use this, I advise against using PersonalBoard.
+PersonalBoard uses your images' ExifData, specifically the UserComment tag (37510) . If you use this for other purposes, I advise against using PersonalBoard.
 
 
 This is an application that is designed to work as a local imageboard. 
@@ -48,7 +52,7 @@ Refactoring
 Cleaning up code
 Logic fixing
 Adding key events to focus on the appropriate entry fields
-Resizing the viewed image from fullsize to a size that is more viewable (Done?)
 Adding a fullscreen option for viewing the image
-Allow adding tags to multiple images at once from the gallery
+Adding zoom functionality on gallery mode.
+~~Allow adding tags to multiple images at once from the gallery~~ Done
 Loading optimization, especially for higher image counts.
