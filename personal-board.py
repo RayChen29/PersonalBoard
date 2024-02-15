@@ -1,5 +1,6 @@
 # from test_class import PersonalBoard
 #Libraries here
+
 from tkinter import *
 from tkinter import colorchooser
 from tkinter import filedialog
@@ -9,16 +10,16 @@ import os
 import base64
 from win_unicode_console import enable
 enable()
-
+#TODO: Add the functionality for the buttons and entry. Maybe a bind too.
+#BIG TODO: Tagging support for multiple images at once from gallery.
 DEFAULT_BG_0 = "#FFFFFF"  # White mode
 DEFAULT_BG_1 = "#2C3738"  # Dark mode
-THUMBNAIL_SIZE = (100,100) #sample size, can experiment
+THUMBNAIL_SIZE = (90,90) #sample size, can experiment
 DISPLAY_LIMIT = 20 #display up to this many images per page
 #TODO: Maybe need to optimize loading speed for images.
 #TODO Maybe turn the decoding process into a function?
 class PersonalBoard:
     def __init__(self):
-        #Tkinter stuff
         self.root = Tk()
         self.root.title("Personal Board")
         self.root.minsize(1280,720)
@@ -35,7 +36,7 @@ class PersonalBoard:
             res[0] = int(res[0][11:])
             res[1] = int(res[1][:-1])    
             self.root.geometry(f"{res[0]}x{res[1]}")
-
+        self.root.bind("<Escape>",self.close_window)
         self.bg_frame = Frame(self.root)
         self.bg_frame.pack(anchor='ne')
         self.bg_label = Label(self.bg_frame, text="Set Background Color").grid(row=0,column=0)
@@ -43,39 +44,108 @@ class PersonalBoard:
         self.bg_dark = Button(self.bg_frame, text="Dark", command=self.set_dark,bg="grey",fg="white").grid(row=0,column=2)
         self.bg_custom = Button(self.bg_frame, text="Custom", command=self.set_custom).grid(row=0,column=3)
         
+        self.blank = Frame(self.root) #Only here to drop focus from other stuff
+        self.blank.pack()
+        self.root.bind("<F1>", self.drop_focus)
+
+        #TODO: Add a help button or something that shows off possible shortcuts. Needs updating as we progress
         self.folder_frame = Frame(self.root)
         self.folder_frame.pack(anchor='center')
         self.add_button = Button(self.folder_frame, text="Add Folder",command=self.add_folder).pack(side=LEFT)
         self.delete_button = Button(self.folder_frame,text="Delete Folder",command=self.delete_folder).pack(side=RIGHT)
         
         self.search_frame = Frame(self.root)
-        self.search_frame.pack(anchor='center',pady=50)
+        self.search_frame.pack(anchor='center',pady=5)
         self.search_label = Label(self.search_frame, font=("Arial",20),text="Search Images by Tag").pack()
         self.search_tags = Entry(self.search_frame, font=("Arial",20))
         self.root.bind("<grave>", self.search_focus)
         self.search_tags.pack()
         self.search_tags.bind("<Return>", self.search_key)
         self.search_button = Button(self.search_frame, text="Search", font=("Arial", 15), command=self.search_results)
-        self.search_button.pack()        
+        self.search_button.pack()  
+        
+        self.tagging_frame = Frame(self.root)
+        self.tagging_frame.pack(pady=5)
+        self.tagging_mode = False
+        #TODO: When tagging entry is selected, disable hotkey.
+        self.tagging_mode_label = Label(self.tagging_frame, text="Tagging Mode Disabled. Press CTRL to enable", font=("Arial", 15))
+        self.tagging_mode_label.pack()
+        self.tag_mode_entry = Entry(self.tagging_frame,width = 30, font=("Arial", 15))
+        self.tag_mode_entry.pack()
+        #TODO: Let table cycle focus only between tag_mode_entry, search_entry, and page entry.
+        # self.root.bind("<Tab>",self.tag_entry_focus)
+        self.tag_button_frame = Frame(self.tagging_frame)
+        #TODO: Add events for buttons.
+        self.add_tag_button = Button(self.tag_button_frame,state="disabled",text="Add Tag(s)",width=15,height=1,command = self.add_button_tags)
+        self.add_tag_button.grid(column=0,row=0)
+        self.remove_tag_button = Button(self.tag_button_frame,state="disabled",text="Remove Tag(s)",width=15,height=1,command=self.delete_tag_button)
+        self.remove_tag_button.grid(column=1,row=0)
+        self.tag_button_frame.pack()
+        self.root.bind("<Control-KeyRelease>",self.tagging_event)
+        #TODO: Make these work, also 1) make keys to un/focus from entry bar
+        #2) Don't let '=' get added when pressed for hotkey.
+        # self.root.bind("<KeyPress-equal>",self.add_button_tags)
+        self.root.bind("<KP_Add>",self.add_button_tags)
+        self.root.bind("<KeyPress-minus>",self.delete_tag_button)
+        self.root.bind("<KP_Subtract>",self.delete_tag_button)
         
         self.all_folders = []
         self.all_photos = []
         self.results = []
         self.grid_labels = []
-        self.gallery_grid = Frame(self.root)
+        self.gallery_grid = Frame(self.root)#the pictures.
         self.gallery_grid.pack()
-        self.page_grid = Frame(self.root)
+        self.page_grid = Frame(self.root) #go to page x bar.
         self.page_grid.pack()
+        self.page_no = 0 #the page we are on
         
-        #Max Resolution of (main?) monitor screen
         self.screen_x = self.root.winfo_screenwidth()
         self.screen_y = self.root.winfo_screenheight()
         
-        self.query = "" #maybe need to use later?
-        self.root_path = os.getcwd()
-
-        
+        self.root_path = os.getcwd()     
     #NON-MEANINGFUL METHODS HERE
+    def tag_entry_focus(self,event):
+        self.tag_mode_entry.focus_set()
+    
+    def drop_focus(self,event):
+        print("Dropping focus")
+        self.blank.focus_set()
+    
+    def close_window(self,event):
+        event.widget.destroy()
+
+    def tag_toggle(self,button): #un/highlight button. Determines if tag will be added or deleted
+        if button.taggle == False:
+            button.taggle = True
+            button.config(background="blue",image=button.thumbnail_image,command=lambda i=button: self.tag_toggle(i))
+        else:
+            button.taggle = False
+            button.config(background="white",image=button.thumbnail_image,command=lambda i=button: self.tag_toggle(i))
+                    
+    def tagging_event(self,event):
+        print("Event triggering")
+        if self.tagging_mode == False:
+            self.tagging_mode_label.config(text="Tagging Mode Enabled. Press CTRL to disable")
+            self.tagging_mode = True
+            self.add_tag_button.config(state="active")
+            self.remove_tag_button.config(state="active")            
+            #Change buttons into those that highlight until the un/tag button(soon TM) is clicked
+            children = self.gallery_grid.winfo_children()
+            view_img_buttons = [child for child in children if isinstance(child,Button)]
+            #TODO: maybe make page number global so that can be grabbed and used alongside results[] Done for now
+            for button in view_img_buttons:
+                button.taggle = False
+                button.config(image=button.thumbnail_image,command=lambda i=button: self.tag_toggle(i))    
+        else:
+            self.tagging_mode_label.config(text="Tagging Mode Disabled. Press CTRL to enable")
+            self.tagging_mode = False
+            self.add_tag_button.config(state="disabled")
+            self.remove_tag_button.config(state="disabled")
+            children = self.gallery_grid.winfo_children()
+            tag_img_buttons = [child for child in children if isinstance(child,Button)]
+            for button in tag_img_buttons:
+                button.config(background="white",image=button.thumbnail_image,command=lambda i=button.path: self.view_img(i)) 
+            
     def update_res(self, event):
         try:
             os.chdir(self.root_path)
@@ -114,8 +184,81 @@ class PersonalBoard:
             self.edit_line(line_no=1,text="bgcolor="+color[1]+"\n")
             
     #TODO: Maybe add a transparent custom background option
-
     #MEANINGFUL METHODS HERE
+    #TODO: Later on, refactor this + remove methods to be general use case? Or just do now.
+    #TODO: Handle case of just spaces with doing nothing.
+    #TODO: Prevent blank space tags from being added as well.
+    def delete_tag_button(self,event):#TODO: Add event later
+        tags = self.tag_mode_entry.get()
+        children = self.gallery_grid.winfo_children() 
+        to_tag = []
+        tag_img_buttons  = [child for child in children if isinstance(child,Button)]
+        for button in tag_img_buttons:
+            if button.taggle == True:
+                to_tag.append(button.path)
+                button.config(background='white')
+                button.taggle=False
+        for photo in to_tag:
+            self.delete_tag(photo,tags)      
+        self.tag_mode_entry.delete(0,END)                 
+    #TODO: out of range, need to find fix
+    def delete_tag(self,img_path,tags):
+        img = Image.open(img_path)
+        tag_list = tags.split(' ')
+        exif = img.getexif()
+        if exif is not None:
+            for tag in tag_list: 
+                if 37510 in exif:
+                    user_comment = exif[37510].split(',') if exif[37510] else []
+                    for i in range(len(user_comment)): #TODO: can probably do search quicker/more efficient
+                        if user_comment[i] == tag:
+                            user_comment.pop(i)
+                            exif[37510] = ','.join(user_comment) #TODO:Maybe find way to not have to split and join constantly
+            # exif[37510] = ','.join(user_comment) #is this really needed?
+            img.save(img_path,exif=exif)
+        
+    #TODO: Check if tag exists before adding; don't add if a match is found. Maybe implement to_lower as well?
+    def add_tags(self,img_path,tags): #add tag button probably use a different method to get here first?
+        tag_list = tags.split(' ') #TODO: strip or otherwise remove ending spaces as well?
+        img = Image.open(img_path)
+        # Retrieve the existing EXIF data
+        exif = img.getexif()
+            # Check if EXIF data is present
+        if exif is not None:
+                # Check if UserComment tag exists
+            if 37510 in exif:
+                # Get the existing UserComment value
+                user_comment = exif[37510].split(',') if exif[37510] else []
+                # Iterate over new tags and append them if not present
+                for tag in tag_list:
+                    if tag not in user_comment: #.strip was CPT
+                        user_comment.append(tag)
+                # Join the list and assign it back to UserComment
+                exif[37510] = ','.join(user_comment)
+                img.save(img_path,exif=exif)
+            else:# If exif/UserComment doesn't exist, create a new list with the tags and join it
+                exif[37510] = ','.join(tag_list)
+            img.save(img_path, exif=exif)                   
+        else:# If exif/UserComment doesn't exist, create a new list with the tags and join it
+            exif[37510] = ','.join(tag_list)
+            img.save(img_path, exif=exif)    
+                
+    # def add_button_tags(self,event):#TODO: add events for buttons to get here; via click or hotkey
+    def add_button_tags(self,event):
+        tags = self.tag_mode_entry.get()
+        print(tags)
+        to_tag = []
+        children = self.gallery_grid.winfo_children() 
+        tag_img_buttons = [child for child in children if isinstance(child,Button)]
+        for button in tag_img_buttons:
+            if button.taggle == True:
+                to_tag.append(button.path)
+                button.config(background='white')
+                taggle=False
+        for photo in to_tag:
+            self.add_tags(photo,tags)      
+        self.tag_mode_entry.delete(0,END) 
+    
     def add_folder(self):
         #TODO: Find out how to correct encoding.
         os.chdir(self.root_path)
@@ -123,6 +266,8 @@ class PersonalBoard:
             lines = settings.readlines()
             folderpath = filedialog.askdirectory()
             #encode below
+            if not folderpath:
+                return
             for line in lines:
                 if folderpath == line:
                     print("Uhhhh")
@@ -137,13 +282,14 @@ class PersonalBoard:
             ind = int(del_list.curselection()[0]) + 7
             self.edit_line(ind, "")  # Leaves a blank line, pref. to remove it, but eh.
             del_list.delete(del_list.curselection())
-            #UNSURE if below 2 lines are needed here
             # Now, `decoded_path` contains the original UTF-8 folder path 
             print('decoded path = ', decoded_path)
- 
+            
         del_window = Toplevel()
         del_window.geometry("600x700+600+0")#This just happened to work.
         del_window.minsize(600,700)
+        del_window.focus_set()
+        del_window.bind('<Escape>',self.close_window)
         
         #TODO: maybe find way to delete residue lines from the textfile
         del_list = Listbox(del_window,width=75)
@@ -161,11 +307,9 @@ class PersonalBoard:
         del_button.pack()
         
     def search_results(self):
-        #get all subfolders first?
-        # self.all_folders
         print("test")
         #Go to all (sub/)folders and append them to search locations
-        self.results = [] #reset results upon launching
+        self.results = [] #reset results upon firing function.
         tags = self.search_tags.get()
         
         def append_folders(folder):
@@ -202,18 +346,17 @@ class PersonalBoard:
                     full_path = os.path.join(folder,file).replace("\\","/") #here b/c of some quirk, unsure if needed
                     if full_path not in self.all_photos:
                         self.all_photos.append(full_path)
-                # Populate self.results based on user's tags
+        # Populate self.results based on user's tags
         tags = self.search_tags.get()
         for photo in self.all_photos:
             if self.filter_photos(photo, tags) == True:
-                self.results.append(photo)
-                
-        # self.display_page(0) #CPT
+                self.results.append(photo)   
         self.show_results() 
         
     def filter_photos(self,photo: str, tags:str) -> bool:
         if tags == '': #if tag entry is empty, auto-pass
             return True
+        tag_list = tags.split(' ')
         #photo is the path, img is the opened file
         img = Image.open(photo)
         exif = img.getexif()
@@ -221,8 +364,9 @@ class PersonalBoard:
         if exif is not None:
             if 37510 in exif:
                 user_comment = exif[37510].split(',') if exif[37510] else []
-                for stag in tags:
-                    if stag not in user_comment:
+                
+                for tag in tag_list:
+                    if tag not in user_comment:
                         return False
                 return True
         return False #Assuming here that, if no exif is found, auto-return false
@@ -231,7 +375,6 @@ class PersonalBoard:
         #Show result photos on grid
         print("Show Results")
         #do the tag work and the filter work below
-        #grid label stuff. So far copied from og
         if self.grid_labels is not None:
             for label in self.grid_labels:
                 label.destroy()
@@ -240,8 +383,10 @@ class PersonalBoard:
         page_count = int((len(self.results)/ DISPLAY_LIMIT))
         if (len(self.results) % DISPLAY_LIMIT) > 0:
             page_count += 1
-        self.display_page(0)
-        self.update_page_label(0,page_count)
+        # self.display_page(0)
+        self.display_page(self.page_no)
+        self.update_page_label(self.page_no, page_count)
+        # self.update_page_label(0,page_count)
 
 #This block below might need help.
     def show_image(self,spot_no,img): #Maybe change to square root or something?
@@ -254,10 +399,10 @@ class PersonalBoard:
             print(photo.info)
             thumbnail_image = ImageTk.PhotoImage(photo)
             img_button = Button(self.gallery_grid, image=thumbnail_image, command=lambda i=img: self.view_img(i))
-            # img_button = Button(self.gallery_grid, image=thumbnail_image, command=lambda i=img: self.view_img()
             img_button.thumbnail_image = thumbnail_image  # Keep reference to thumbnail
-            img_button.grid(row=row, column=col)
+            img_button.grid(padx=2,pady=2,row=row, column=col)
             self.grid_labels.append(img_button)
+            img_button.path = img
         except Exception as e:
             print(f"Error loading or displaying image: {e}")
         if img_button:
@@ -271,17 +416,14 @@ class PersonalBoard:
                     
                     
     #UPL - Page Buttons Grid Labels
-    #TODO: for 4- pages, support backward page buttons
     def update_page_label(self,page_no,page_count): #page_no = current page
         for widget in self.page_grid.winfo_children(): 
             widget.destroy()
-        # start_page
         end_page = min(page_count,5) #max # of pages
-
-    # TODO: Maybe find way to condense jump and direct jump into one method?
         def jump(i): #Clears widgets upon loading page i 
             for photo in self.gallery_grid.winfo_children():
                 photo.destroy()
+            self.page_no = i #Testing
             self.display_page(i)
             self.update_page_label(i,page_count)
         def direct_jump(event=None):
@@ -305,8 +447,7 @@ class PersonalBoard:
                 p1.config(state="disabled")
             p1.grid(row=0,column=0)
 
-            #Button 2. Should take you 1 page back.
-            #Always display 2 if at page 3 or below
+            #Button 2. Should take you 1 page back. #Always display 2 if at page 3 or below
             if page_no <= 2: #if at page 
                 p2 = Button(self.page_grid, text = "2", command=lambda i=1:jump(i))
             else:    
@@ -322,7 +463,6 @@ class PersonalBoard:
             p3.grid(row=0,column=2)
             if page_no >= 2:
                 p3.config(state='disabled')
-                
             #Page 4; if at page 3 or later, should be 1 + current page. 
             if page_no <= 2:
                 p4 = Button(self.page_grid, text = "4", command=lambda i=3:jump(i))
@@ -350,15 +490,17 @@ class PersonalBoard:
 
         print("Test_DONE?")
 #TODO: might need to squish further. most kinks worked out, but still room to improve.
-#TODO: Make image smaller and scale w window size
+#TODO: Make image smaller and scale w window size?
 #TODO: Fix tag support.
+#TODO: Maybe move the tag helper functions outside this scope; tag manip happening outside this scope
     def view_img(self,img):
         photo = Image.open(img)
         photo_viewer = Toplevel()
-
-        # photo_viewer.minsize(1366, 768)
         photo_viewer.minsize(self.screen_x, self.screen_y)
         photo_viewer.maxsize(self.screen_x, self.screen_y)
+
+        photo_viewer.focus_set()
+        photo_viewer.bind('<Escape>',self.close_window)
 
         grid = Frame(photo_viewer)
         add_text = Label(grid, text="Add Tags")
@@ -366,19 +508,15 @@ class PersonalBoard:
 
         tag_list = Frame(grid, bg="#1111CC")
         tag_list.grid(row=2, column=0, sticky="nw", columnspan=2, pady=(0, 1000))
-#TODO: Make text appear right below entry. Seems to get pushed over by other stuff if too big.
         tag_subtitle = Label(tag_list, text="Tags. Click to remove")
         tag_subtitle.pack(anchor='nw', side='top')
-        
         #Chat, width and height scaling + accounting for widgets, + shrink factor
         shrink_factor = 1.2 #Higher number = smaller image, because shrinks more.
         available_width = self.screen_x - tag_list.winfo_reqwidth()
         width_scale = min(1.0,available_width / (photo.width*shrink_factor))
         height_scale = min(1.0,self.screen_y / (photo.height*shrink_factor))
-
 #TODO: Squish photo to be displayable at window's size (pref at all times). 
 #TODO: Far future?: Add zoom feature. Maybe
-
         smaller_photo_size = (
             int(photo.width * min(width_scale,height_scale)),
             int(photo.height * min(width_scale, height_scale))               
@@ -390,7 +528,7 @@ class PersonalBoard:
         
         photo_label.config(image=photo_label.image)
         photo_label.grid(row=1, column=2, padx=20, pady=20, sticky="n", rowspan=3)
-               
+        #TODO: Figure out post-change how to remove tag button in this window.
         def delete_tag(tag):
             exif = photo.getexif()
             if exif is not None:
@@ -408,49 +546,43 @@ class PersonalBoard:
                             exif[37510] = ','.join(user_comment)
                             photo.save(img,exif = exif)
 
-        def add_tag(tag):
-            # Split the input tag into a list
-            tags = tag.split(' ')
-            # Retrieve the existing EXIF data
-            exif = photo.getexif()
-            # Check if EXIF data is present
-            if exif is not None:
-                # Check if UserComment tag exists
-                if 37510 in exif:
-                    # Get the existing UserComment value
-                    user_comment = exif[37510].split(',') if exif[37510] else []
-                    # Iterate over new tags and append them if not present
-                    for atag in tags:
-                        if atag not in user_comment:
-                            user_comment.append(atag)
-                    
-                    # Join the list and assign it back to UserComment
-                    exif[37510] = ','.join(user_comment)
-                else:
-                    # If UserComment doesn't exist, create a new list with the tags and join it
-                    exif[37510] = ','.join(tags)
+        # def add_tag_to_list(event=None, tag=None):
+        #     # nonlocal tag_list
+        #     if tag is not None: #Loading Tags from Image
+        #         exif = photo.getexif()
+        #         if exif is not None:
+        #             if 37510 in exif:
+        #                 itags = exif[37510].split(',') if exif[37510] else []
+        #                 for itag in itags:
+        #                     tag_button = Button(tag_list,text=itag,command=lambda t=itag:delete_tag(t))
+        #                     tag_button.pack()
+        #     else: #adding tag from entry bar
+        #         self.add_tags(img,add_tag_entry.get())
+        #         itags = (add_tag_entry.get()).split(' ')
                 
-                # Save the image with the updated EXIF data
-                photo.save(img, exif=exif)
-                print(exif)
-
+        #         for itag in itags:
+        #             # if itag not in tag_list.winfo_children():
+        #             tag_button = Button(tag_list, text = itag,command=lambda t=itag:delete_tag(t))
+        #             tag_button.pack()
+        #         add_tag_entry.delete(0, END)     
         def add_tag_to_list(event=None, tag=None):
             # nonlocal tag_list
-            if tag is not None: #Loading Tags from Image
+            if tag is not None:  # Loading Tags from Image
                 exif = photo.getexif()
                 if exif is not None:
                     if 37510 in exif:
                         itags = exif[37510].split(',') if exif[37510] else []
                         for itag in itags:
-                            tag_button = Button(tag_list,text=itag,command=lambda t=itag:delete_tag(t))
-                            tag_button.pack()
-            else: #adding tag from entry bar
-                add_tag(add_tag_entry.get())
-                itags = (add_tag_entry.get()).split(' ')
-                for itag in itags:
-                    tag_button = Button(tag_list, text = itag,command=lambda t=itag:delete_tag(t))
-                    tag_button.pack()
-                add_tag_entry.delete(0, END)     
+                            if itag.strip() not in (button.cget("text") for button in tag_list.winfo_children()):
+                                tag_button = Button(tag_list, text=itag, command=lambda t=itag: delete_tag(t))
+                                tag_button.pack()
+            else:  # adding tag from entry bar
+                entered_tags = add_tag_entry.get().split(' ')
+                for itag in entered_tags:
+                    if itag.strip() not in (button.cget("text") for button in tag_list.winfo_children()):
+                        tag_button = Button(tag_list, text=itag, command=lambda t=itag: delete_tag(t))
+                        tag_button.pack()
+                add_tag_entry.delete(0, END)
 
         add_tag_entry = Entry(grid, font=("Arial", 20))
         add_tag_entry.grid(row=1, column=0, sticky="nw", pady=20)
@@ -463,7 +595,7 @@ class PersonalBoard:
         if ini_exif is not None:
             for tag,value in ini_exif.items():
                 if tag == 37510:
-                    add_tag(value)
+                    self.add_tags(img,value)
                     #add buttons here?
                     itags = value.split(',')
                     length = len(itags)
