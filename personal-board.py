@@ -1,4 +1,6 @@
 # from test_class import PersonalBoard
+#below variable is there as a test
+settings_path = os.path.join(os.getcwd(), "settings.txt")
 #Libraries here
 
 from tkinter import *
@@ -6,7 +8,7 @@ from tkinter import colorchooser
 from tkinter import filedialog
 from PIL import Image, ImageTk, ExifTags
 from PIL.ExifTags import TAGS
-import os
+import sys, os
 import base64
 from win_unicode_console import enable
 enable()
@@ -18,6 +20,12 @@ THUMBNAIL_SIZE = (90,90) #sample size, can experiment
 DISPLAY_LIMIT = 20 #display up to this many images per page
 #TODO: Maybe need to optimize loading speed for images.
 #TODO Maybe turn the decoding process into a function?
+    # extra method here just to facilitate making the executable
+def resource_path(relative_path):
+    #Get absolute path to resource, works for dev and PyInstaller bundle.
+    base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, relative_path)
+
 class PersonalBoard:
     def __init__(self):
         self.root = Tk()
@@ -26,7 +34,9 @@ class PersonalBoard:
         self.root.bind("<Configure>", self.update_res)
         
         #read file, load background color, saved resolution,
-        with open("settings.txt", "r") as settings:
+        # with open("settings.txt", "r") as settings: #replace with below line
+        # with open(resource_path("settings.txt"),"r") as settings:
+        with open(settings_path,"r") as settings:
             lines = settings.readlines()
             bg = lines[1].split("=")
             bg = bg[1][:7]
@@ -104,6 +114,7 @@ class PersonalBoard:
         
         self.root_path = os.getcwd()     
     #NON-MEANINGFUL METHODS HERE
+
     def tag_entry_focus(self,event):
         self.tag_mode_entry.focus_set()
     
@@ -149,7 +160,10 @@ class PersonalBoard:
     def update_res(self, event):
         try:
             os.chdir(self.root_path)
-            with open("settings.txt", "r+") as settings:
+            # with open("settings.txt", "r+") as settings: Replace with below line
+            # with open(resource_path("settings.txt"),"r+") as settings:
+            with open(settings_path, "r+") as settings:
+                # wondering if we need to read() still since it seems to work at the moment
                 xy = []
                 xy.append(str(event.width))
                 xy.append(str(event.height))
@@ -188,7 +202,7 @@ class PersonalBoard:
     #TODO: Later on, refactor this + remove methods to be general use case? Or just do now.
     #TODO: Handle case of just spaces with doing nothing.
     #TODO: Prevent blank space tags from being added as well.
-    def delete_tag_button(self,event):#TODO: Add event later
+    def delete_tag_button(self,event=None):#TODO: Add event later
         tags = self.tag_mode_entry.get()
         children = self.gallery_grid.winfo_children() 
         to_tag = []
@@ -244,7 +258,7 @@ class PersonalBoard:
             img.save(img_path, exif=exif)    
                 
     # def add_button_tags(self,event):#TODO: add events for buttons to get here; via click or hotkey
-    def add_button_tags(self,event):
+    def add_button_tags(self,event=None):
         tags = self.tag_mode_entry.get()
         print(tags)
         to_tag = []
@@ -262,7 +276,9 @@ class PersonalBoard:
     def add_folder(self):
         #TODO: Find out how to correct encoding.
         os.chdir(self.root_path)
-        with open("settings.txt", "r+", encoding="utf-8") as settings:
+        # with open("settings.txt", "r+", encoding="utf-8") as settings: replace with below line
+        # with open(resource_path("settings.txt"),"r+",encoding="utf-8") as settings:
+        with open(settings_path,"r+",encoding="utf-8") as settings:
             lines = settings.readlines()
             folderpath = filedialog.askdirectory()
             #encode below
@@ -280,7 +296,7 @@ class PersonalBoard:
         #TODO: Figure a streamlined way to delete lines from file AS we delete from Listbox.
         def remove():
             ind = int(del_list.curselection()[0]) + 7
-            self.edit_line(ind, "")  # Leaves a blank line, pref. to remove it, but eh.
+            self.edit_line(ind, None)  #Never thought of using None. Was "" before
             del_list.delete(del_list.curselection())
             # Now, `decoded_path` contains the original UTF-8 folder path 
             print('decoded path = ', decoded_path)
@@ -293,7 +309,9 @@ class PersonalBoard:
         
         #TODO: maybe find way to delete residue lines from the textfile
         del_list = Listbox(del_window,width=75)
-        with open("settings.txt","r+") as settings:
+        # with open("settings.txt","r+") as settings: #replace with below line
+        # with open(resource_path("settings.txt"),"r+") as settings:
+        with open(settings_path,"r+") as settings:
             lines = settings.readlines()
             for i in range(7,len(lines)):
                 encoded_path = lines[i].strip()
@@ -322,11 +340,23 @@ class PersonalBoard:
             if folder not in self.all_folders and os.path.isdir(folder):
                 self.all_folders.append(folder)
         os.chdir(self.root_path)
-        with open("settings.txt", "r") as settings:
+        # with open("settings.txt", "r") as settings: #replace with below line
+        # with open(resource_path("settings.txt"),"r") as settings:
+        with open(settings_path,"r") as settings:
             lines = settings.readlines()
+            # for i in range(7,len(lines)): #REPLACED WITH BELOW
+            #     encoded_path = lines[i].strip()
+            #     decoded_bytes = base64.b64decode(encoded_path.encode('utf-8'))
             for i in range(7,len(lines)):
                 encoded_path = lines[i].strip()
-                decoded_bytes = base64.b64decode(encoded_path.encode('utf-8'))
+                if not encoded_path:
+                    continue
+                try:
+                    decoded_bytes = base64.b64decode(encoded_path.encode('utf-8'))
+                except Exception as e:
+                    print(f"Skipping line {i}: {e}")
+                    continue
+            #Replacement stopped here
                 decoded_path = decoded_bytes.decode('utf-8')
                 if decoded_path not in self.all_folders:
                     self.all_folders.append(decoded_path)
@@ -578,11 +608,19 @@ class PersonalBoard:
                                 tag_button.pack()
             else:  # adding tag from entry bar
                 entered_tags = add_tag_entry.get().split(' ')
+                # for itag in entered_tags:
+                #     if itag.strip() not in (button.cget("text") for button in tag_list.winfo_children()):
+                #         tag_button = Button(tag_list, text=itag, command=lambda t=itag: delete_tag(t))
+                #         tag_button.pack()
+                # add_tag_entry.delete(0, END)
+                #Replace above, commented code with below:
+                self.add_tags(img, add_tag_entry.get())  # <-- Save tags into image EXIF
                 for itag in entered_tags:
                     if itag.strip() not in (button.cget("text") for button in tag_list.winfo_children()):
                         tag_button = Button(tag_list, text=itag, command=lambda t=itag: delete_tag(t))
                         tag_button.pack()
-                add_tag_entry.delete(0, END)
+                add_tag_entry.delete(0, END)                
+                #End replacement here
 
         add_tag_entry = Entry(grid, font=("Arial", 20))
         add_tag_entry.grid(row=1, column=0, sticky="nw", pady=20)
@@ -614,7 +652,9 @@ class PersonalBoard:
                         tag_button.pack()
         grid.pack()        
     def edit_line(self, line_no,text): #replace line_no with text
-        with open("settings.txt","r+") as settings:
+        # with open("settings.txt","r+") as settings: #replace with below line
+        # with open(resource_path("settings.txt"),"r+") as settings:
+        with open(settings_path,"r+") as settings:
             lines = settings.readlines()
             #cpt?
             # if line_no < len(lines):
