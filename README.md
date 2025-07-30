@@ -2,7 +2,10 @@ QUICK HEADS UP
 After moving onto Base64 Encoding for file paths, I can't automatically include the sample pictures folder into settings.txt
 The old version is under the V1 branch.
 
-Revision History
+#Revision History
+7/30/25 - Created Executable & Added Sample Pictures
+-Simply download 'personal-board.exe' and 'settings.txt', then run personal-board.exe
+-A folder named "Sample Folder" contains 24 images to let users experiment with this program's features
 
 2/15/24 - Quality of Life Regarding Image Tagging
 -You can now add/remove tags from multiple images on the front page rather than going through each individual image
